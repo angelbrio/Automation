@@ -1,106 +1,68 @@
-📘 Personal Finance Automations – n8n + AI + Google Sheets
+<h1 align="center">💸 Personal Finance Automations – n8n + AI + Google Sheets</h1>
 
-Two complete automations designed to simplify and centralize personal finance management using n8n, AI (GPT-5) and Google Sheets.
+<p align="center">
+Two full end-to-end automations built with <b>n8n</b>, <b>GPT-5</b>, and <b>Google Sheets</b>  
+to make personal finance management effortless, intelligent, and fully automated. ⚡
+</p>
 
-🟦 Automation 1 – Automatic Expense Classification
-(Gmail → n8n → Google Sheets)
+---
 
-Automatically extracts, classifies, and logs bank expenses received via email notifications.
+## 🧠 Overview  
+This repository includes two automations:
 
-🧠 Overview
+- **Automatic Expense Classification** (Gmail → n8n → Sheets)  
+- **Debt & Owed Money Tracker** (Telegram → n8n → Sheets)
 
-This workflow processes incoming bank emails, determines whether each movement is an expense or an income, applies rule-based logic + AI classification, and logs everything into Google Sheets.
+Both workflows combine **rule-based logic**, **AI extraction**, and **clean data storage**.
 
-🔷 Key Features
-🔹 Real-time email ingestion (Gmail Trigger)
-🔹 Automatic Expense vs Income detection
-🔹 AI category classification using GPT-5
-🔹 Rule-based overrides (hour rules, vendors, keywords)
-🔹 Google Sheets logging in structured format
-🔹 Supports categories like OCIO, COMIDA, DEPORTE, MENSUAL, etc.
+---
 
-🔧 Tech Stack
+## 🟦 Automation 1 – Automatic Expense Classification  
+<h3>Gmail → n8n → Google Sheets</h3>
 
-n8n
+> Processes bank emails, detects expense/income, applies AI categorization, and logs everything cleanly in Sheets.
 
-Gmail API
+### 🔷 Key Features  
+- Real-time Gmail ingestion  
+- Expense vs Income detection  
+- **GPT-5** AI categorization (OCIO, COMIDA, DEPORTE, MENSUAL…)  
+- Vendor keyword matching (BAR, PUB, KFC, BASIC-FIT, etc.)  
+- Time-based rules (23:00–06:00 → OCIO)  
+- Automatic Google Sheets logging  
 
-Google Sheets API
+### 🗂 Output Example  
+| Date | Description | Amount | Category | Type |
+|------|-------------|--------|----------|------|
+| 2025-11-17 | MERCADONA | 12.50 | COMIDA | Expense |
+| 2025-11-17 | Payroll | 1985.00 | Salary | Income |
 
-OpenAI GPT-5
+---
 
-Custom rule-based classification
+## 🟩 Automation 2 – Debt Tracking AI  
+<h3>Telegram → n8n → Google Sheets</h3>
 
-🗂️ Output Example
-Date	Description	Amount	Category	Type
-2025-11-17	MERCADONA	12.50	COMIDA	Expense
-2025-11-17	Payroll Santander	1,985.00	Salary	Income
-🟩 Automation 2 – Debt Tracking AI
-(Telegram → n8n → Google Sheets)
+> Reads natural-language messages like:  
+> **"Álvaro owes me 5€ for dinner"**  
+> Extracts all fields and logs structured debt entries.
 
-Converts natural-language messages into structured debt records.
+### 🔷 Key Features  
+- Telegram bot ingestion (text & audio-ready)  
+- **GPT-5 entity extraction:** debtor, creditor, reason, date, amount  
+- Supports multi-person debts  
+- Fallback (never fails — logs raw text)  
+- Outputs structured rows to Google Sheets  
 
-🧠 Overview
+### 🗂 Output Example  
+| Date | Debtor | Creditor | Amount | Reason |
+|------|--------|----------|--------|--------|
+| 2025-11-17 | Álvaro | Ángel | 5.00 | Dinner |
+| 2025-11-17 | Dani | Ángel | 10.00 | Drinks |
 
-A Telegram bot receives natural-language messages like:
+---
 
-“Álvaro owes me 5€ for dinner yesterday.”
+## 🟣 Architecture  
+### 🟦 Expense Classification  
 
-The automation extracts all entities and logs them in a debt ledger.
-
-🟩 Key Features
-🟢 Telegram Bot ingestion (text + future audio support)
-🟢 AI-based extraction: amount, debtor, creditor, reason, date
-🟢 Supports multi-person debts
-🟢 Fallback mode for unrecognized messages
-🟢 Google Sheets structured records
-
-🔧 Tech Stack
-
-Telegram Bot API
-
-n8n
-
-Google Sheets API
-
-OpenAI GPT-5
-
-Fallback rule-based parser
-
-🗂️ Output Example
-Date	Debtor	Creditor	Amount	Reason
-2025-11-17	Álvaro	Ángel	5.00	Dinner
-2025-11-17	Dani	Ángel	10.00	Drinks
-🟣 Architecture Overview
-🟦 Expense Classification
-Gmail Trigger
-        ↓
-Classify Movement (IF node)
-        ├── Expense → AI Category Classification → Append to Expenses Sheet
-        └── Income  → Append to Income Sheet
-
-🟩 Debt Tracking
-Telegram Trigger
-        ↓
-Detect Message Type (text/audio)
-        ↓
-GPT-5 AI Extraction
-        ├── Success → Append Structured Row
-        └── Fallback → Append Raw Log Row
-
-🧭 Roadmap
-
-Voice-to-text support for audio messages
-
-Looker Studio dashboard
-
-Notion / Firebase real-time sync
-
-Monthly financial report generator
-
-Export endpoints (REST API)
-
-📄 License
 
 This project is for personal, non-commercial use.
 You may not sell or commercialize these automations without permission.
