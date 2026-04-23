@@ -1,0 +1,3158 @@
+{
+  "name": "Telegramworkflow",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -208,
+        0
+      ],
+      "id": "4023d7b3-c963-4fd6-b62f-e993c1b548da",
+      "name": "Telegram Trigger",
+      "webhookId": "c5c6191b-43ee-4c68-9e5c-26ae53a097a7",
+      "credentials": {
+        "telegramApi": {
+          "id": "ezvAL9xs1EiGUUBe",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "29baea40-ba12-45b4-be71-717ce9c562a1",
+              "leftValue": "={{ !!$json.message?.voice?.file_id || !!$json.message?.audio?.file_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "120a7ba5-2ca0-403f-a8e8-2361ed83972e",
+              "leftValue": "={{ !!$json.message?.text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -32,
+        0
+      ],
+      "id": "28e926e2-f4ed-421b-b2a9-3bacf17255b8",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{$json.message.voice.file_id}}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        208,
+        -144
+      ],
+      "id": "34e88ab9-7980-4776-ad06-b768d7bacb9a",
+      "name": "Get a file",
+      "webhookId": "fd29b1c8-26a7-4629-a8df-cb0c122a8866",
+      "credentials": {
+        "telegramApi": {
+          "id": "ezvAL9xs1EiGUUBe",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.categoria}}",
+                    "rightValue": "HARD",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "c5625283-7cfd-482b-9161-54d0253e3e1d"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "b20543cb-17ce-4831-a2f3-1d7f08707a31",
+                    "leftValue": "={{$json.categoria}}",
+                    "rightValue": "SIMPLE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1520,
+        144
+      ],
+      "id": "adc47f2c-7d8f-476c-84d3-4ee2ef4bd163",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=Actúas como un extractor determinista de datos para un workflow en n8n.\nTu ÚNICA salida debe ser JSON válido (sin markdown, sin explicaciones, sin texto extra).\n\nTarea:\nDado un texto en español sobre deudas/gastos:\n1) Detecta nombres de PERSONAS mencionadas (distintas) (sin incluir al hablante).\n2) Detecta la INFO (razón/motivo) de la deuda/gasto como el fragmento que suele ir tras \"de\" o \"por\".\n   Ejemplo: \"Juan Ana y Lucia me deben 6 euros de unas cerves\" -> info = \"de unas cerves\"\n\nReglas estrictas PERSONAS:\n1) Solo cuenta PERSONAS (nombres propios/apodos): Juan, Javi, Jose/José, María, etc.\n2) NO incluyas al hablante ni pronombres: \"yo\", \"me\", \"mí\", \"conmigo\", \"nosotros\", \"nos\", \"nuestro\".\n3) Si hay lista tras \"entre\", \"con\", \"para\", \"y\", comas, detecta todos los nombres.\n4) Si aparece \"X me debe ...\" o \"le debo a X ...\", detecta X.\n5) NO inventes nombres.\n6) NO cuentes lugares, marcas o cosas: \"Madrid\", \"Netflix\", \"cena\", \"cervezas\", etc.\n7) Deduplica.\n\nReglas estrictas INFO:\n8) INFO debe ser un substring del texto original (NO inventes).\n9) Prioriza capturar desde la primera aparición de:\n   - \"de ...\"  o  \"por ...\"\n   hasta antes de:\n   - \"entre\", \"con\", \"para\", o fin de frase, o puntuación (. , ; ! ?)\n10) Devuelve la INFO incluyendo la preposición (\"de ...\" / \"por ...\").\n11) Si no hay motivo claro, devuelve \"NO SE\".\n\nConfidence:\n- \"alta\": personas claras y/o info clara\n- \"media\": algo de ambigüedad\n- \"baja\": muy ambiguo o casi vacío\n\nDevuelve EXACTAMENTE este esquema:\n{\n  \"text\": \"<texto original>\",\n  \"personas\": [\"<nombre1>\", \"<nombre2>\"],\n  \"n_personas_detectadas\": 0,\n  \"info\": \"NO SE\",\n  \"confidence\": \"alta\"\n}\n\nTexto a analizar:\n{{ $json.message.text }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        896,
+        144
+      ],
+      "id": "82cbe31b-2e93-450b-9b38-73a2698fc1bb",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "Wgoib3eXsaHOFd7t",
+          "name": "Cuenta GPT"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1R9f_wrGkPGQt5LMjNaRj-wVKBrBxFpMyVdEUxs9-Nc4",
+          "mode": "list",
+          "cachedResultName": "Finanzas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1R9f_wrGkPGQt5LMjNaRj-wVKBrBxFpMyVdEUxs9-Nc4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1913500147,
+          "mode": "list",
+          "cachedResultName": "DEUDAS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1R9f_wrGkPGQt5LMjNaRj-wVKBrBxFpMyVdEUxs9-Nc4/edit#gid=1913500147"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "PERSONA": "={{ $json.persona }}",
+            "FECHA Y HORA": "={{ $json.fecha }}",
+            "TOTAL": "={{ $json.total }}",
+            "INFO": "={{ $json.info }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "PERSONA",
+              "displayName": "PERSONA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "INFO",
+              "displayName": "INFO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "FECHA Y HORA",
+              "displayName": "FECHA Y HORA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TOTAL",
+              "displayName": "TOTAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1968,
+        144
+      ],
+      "id": "85f3ae2d-0890-4855-8225-99b18864e676",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "oSybT3jDr00KYv5c",
+          "name": "Gmail Account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const n = Number($json.ia?.n_personas_detectadas ?? 0);\n\nconst categoria = n > 1 ? \"HARD\" : \"SIMPLE\";\n\nreturn [{\n  json: {\n    ...$json,\n    categoria,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1376,
+        144
+      ],
+      "id": "8eed2909-33f4-4d24-a8ad-a778b86e91fb",
+      "name": "Detect type"
+    },
+    {
+      "parameters": {
+        "jsCode": "// --- SIMPLE ---\n// Output: persona, fecha, info, total\n\nconst ia = $json.ia ?? {};\nconst text = ($json.message?.text ?? ia.text ?? \"\").toString();\n\nfunction parseFirstAmount(t) {\n  const m = t.match(/(-?\\d+(?:[.,]\\d{1,2})?)\\s*(?:€|eur|euros)?/i);\n  if (!m) return 0;\n  const n = Number(m[1].replace(\",\", \".\"));\n  return Number.isFinite(n) ? n : 0;\n}\n\n// Persona: si IA detectó al menos 1, usamos la primera\nconst persona =\n  Array.isArray(ia.personas) && ia.personas.length >= 1\n    ? ia.personas[0]\n    : \"NO SE\";\n\n// Fecha\nconst fecha =\n  $json.fecha ??\n  (typeof $json.message?.date === \"number\"\n    ? new Date($json.message.date * 1000).toISOString()\n    : new Date().toISOString());\n\n// ✅ INFO (una sola definición)\nconst info = ia.info ?? \"NO SE\";\n\n// Total\nconst totalRaw =\n  (typeof ia.cantidad_total === \"number\")\n    ? ia.cantidad_total\n    : parseFirstAmount(text);\n\nconst total = Number(totalRaw.toFixed(2));\n\nreturn [{\n  json: {\n    ...$json,\n    persona,\n    fecha,\n    info,\n    total,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1744,
+        240
+      ],
+      "id": "225d7d26-489f-4d51-a17c-06fe9e65c86c",
+      "name": "Simple route"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        384,
+        -144
+      ],
+      "id": "0bec60a2-98bd-4bf1-b19e-2fa35ea9f08a",
+      "name": "Transcribe a recording",
+      "credentials": {
+        "openAiApi": {
+          "id": "Wgoib3eXsaHOFd7t",
+          "name": "Cuenta GPT"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $json.output?.[0]?.content?.[0]?.text ?? \"{}\";\n\nlet parsed;\ntry {\n  parsed = JSON.parse(raw);\n} catch (e) {\n  parsed = { text: \"\", personas: [], n_personas_detectadas: 0, info: \"NO SE\", confidence: \"baja\" };\n}\n\nreturn [{ json: { ...$json, ia: parsed } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        144
+      ],
+      "id": "cc83d584-101a-463d-8c3e-66046425fb68",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = ($json.message?.text ?? \"\").toString().trim();\n\n// Detecta \"METE\" al inicio (ignorando mayúsculas/minúsculas y espacios)\nconst rama = /^mete\\b/i.test(text) ? \"METE\" : \"NO_METE\";\n\nreturn [{\n  json: {\n    ...$json,\n    rama,\n    text_original: text,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        592,
+        16
+      ],
+      "id": "c21d6a09-3919-4725-ae37-fa9f8f53fe3e",
+      "name": "Simple route2"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=Actúas como un extractor determinista de datos para un workflow en n8n.\nTu ÚNICA salida debe ser JSON válido (sin markdown, sin explicaciones, sin texto extra).\n\nTarea:\nExtrae de un texto tipo comando:\n\"METE el gasto de 6 euros de cerves en OCIO\"\nlos siguientes campos:\n- total: número (euros)\n- gasto: concepto del gasto\n- categoria: una de estas opciones EXACTAS:\n  [\"mensual\",\"ocio\",\"deporte\",\"trabajo\",\"comida\",\"ahorro\",\"inversion\"]\n\nReglas:\n1) \"total\" debe ser un número (soporta coma o punto). Si no hay número claro => 0.\n2) \"gasto\" debe ser el concepto del gasto (texto). Normalmente viene tras \"de\" y antes de \"en <categoria>\".\n3) \"categoria\" se toma del texto tras \"en\". Normaliza a minúsculas y mapea a una de las opciones permitidas.\n   - Si el texto dice \"OCIO\" => \"ocio\"\n   - Si dice \"Inversión\" => \"inversion\" (sin tilde)\n4) La categoria devuelta DEBE ser exactamente una de las 7 opciones. No devuelvas otras.\n5) Si no puedes decidir la categoria con confianza => usa \"ocio\".\n6) Devuelve también el texto original en \"text\".\n\nDevuelve EXACTAMENTE este esquema:\n{\n  \"text\": \"<texto original>\",\n  \"total\": 0,\n  \"gasto\": \"NO SE\",\n  \"categoria\": \"ocio\",\n  \"confidence\": \"alta\"\n}\n\nTexto a analizar:\n{{ $json.message.text }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        880,
+        -224
+      ],
+      "id": "af4c9d33-146a-473d-826f-6c5497ae8a0c",
+      "name": "Message a model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "Wgoib3eXsaHOFd7t",
+          "name": "Cuenta GPT"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $json.output?.[0]?.content?.[0]?.text ?? \"{}\";\n\nlet mete;\ntry {\n  mete = JSON.parse(raw);\n} catch (e) {\n  mete = { text: \"\", total: 0, gasto: \"NO SE\", categoria: \"NO SE\", confidence: \"baja\" };\n}\n\n// Normaliza por si viene total como string\nconst totalNum = Number(String(mete.total ?? 0).replace(\",\", \".\"));\nmete.total = Number.isFinite(totalNum) ? Number(totalNum.toFixed(2)) : 0;\n\n// Limpieza extra\nmete.gasto = (mete.gasto ?? \"NO SE\").toString().trim() || \"NO SE\";\nmete.categoria = (mete.categoria ?? \"NO SE\").toString().trim().toUpperCase() || \"NO SE\";\n\nreturn [{\n  json: {\n    ...$json,\n    mete,                // objeto completo\n    total: mete.total,   // atajos por si quieres mapear fácil a Sheets\n    gasto: mete.gasto,\n    categoria: mete.categoria,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        -224
+      ],
+      "id": "5186951f-eb26-4ae2-95f1-d9644eaa2abc",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.categoria }}",
+                    "rightValue": "MENSUAL",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "7824127a-af5b-46cd-a9ff-344203b0ec32"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "5b883335-b075-4917-b5f7-2728719f4d8d",
+                    "leftValue": "={{ $json.categoria }}",
+                    "rightValue": "OCIO",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "1cce04aa-40b0-4948-b6f8-60e39f78b736",
+                    "leftValue": "={{ $json.categoria }}",
+                    "rightValue": "COMIDA",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "603e61ec-09a5-46ed-9fbb-720eaa00ac3e",
+                    "leftValue": "={{ $json.categoria }}",
+                    "rightValue": "DEPORTE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c47d9356-df5c-4220-8022-c445772b62ff",
+                    "leftValue": "={{ $json.categoria }}",
+                    "rightValue": "TRABAJO",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "6eb91322-02f7-4838-ac10-73b0162b6d9d",
+                    "leftValue": "={{ $json.categoria }}",
+                    "rightValue": "AHORRO",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "a100d45f-f93f-4ddd-9274-7a11ef72678a",
+                    "leftValue": "={{ $json.categoria }}",
+                    "rightValue": "INVERSION",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1408,
+        -304
+      ],
+      "id": "d1681ced-f00b-43d6-9718-5c01bc451cc5",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1R9f_wrGkPGQt5LMjNaRj-wVKBrBxFpMyVdEUxs9-Nc4",
+          "mode": "list",
+          "cachedResultName": "Finanzas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1R9f_wrGkPGQt5LMjNaRj-wVKBrBxFpMyVdEUxs9-Nc4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "2025",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1R9f_wrGkPGQt5LMjNaRj-wVKBrBxFpMyVdEUxs9-Nc4/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "TOTAL": "=",
+            "MENSUAL": "={{ $json.gasto }}",
+            "TOTAL_MENSUAL": "={{ $json.total }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "GASTOS",
+              "displayName": "GASTOS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "MENSUAL",
+              "displayName": "MENSUAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_MENUSAL",
+              "displayName": "FECHA_MENUSAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_MENSUAL",
+              "displayName": "TOTAL_MENSUAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "OCIO",
+              "displayName": "OCIO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_OCIO",
+              "displayName": "FECHA_OCIO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_OCIO",
+              "displayName": "TOTAL_OCIO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TRABAJO",
+              "displayName": "TRABAJO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_DE_TRABAJO",
+              "displayName": "FECHA_DE_TRABAJO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_TRABAJO",
+              "displayName": "TOTAL_TRABAJO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "DEPORTE",
+              "displayName": "DEPORTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_DEPORTE",
+              "displayName": "FECHA_DEPORTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_DEPORTE",
+              "displayName": "TOTAL_DEPORTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "COMIDA",
+              "displayName": "COMIDA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_COMIDA",
+              "displayName": "FECHA_COMIDA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_COMIDA",
+              "displayName": "TOTAL_COMIDA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "INGRESOS",
+              "displayName": "INGRESOS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_INGRESO",
+              "displayName": "FECHA_INGRESO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_INGRESOS",
+              "displayName": "TOTAL_INGRESOS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "AHORRO",
+              "displayName": "AHORRO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA",
+              "displayName": "FECHA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_AHORRO",
+              "displayName": "TOTAL_AHORRO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "NO CLASIFICADO",
+              "displayName": "NO CLASIFICADO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_NO_CLASIFICADO",
+              "displayName": "FECHA_NO_CLASIFICADO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL",
+              "displayName": "TOTAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "INVERSIONES",
+              "displayName": "INVERSIONES",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1712,
+        -1248
+      ],
+      "id": "193e8416-d4ec-4953-8013-a78596a0aaa8",
+      "name": "MENSUAL",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "oSybT3jDr00KYv5c",
+          "name": "Gmail Account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1R9f_wrGkPGQt5LMjNaRj-wVKBrBxFpMyVdEUxs9-Nc4",
+          "mode": "list",
+          "cachedResultName": "Finanzas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1R9f_wrGkPGQt5LMjNaRj-wVKBrBxFpMyVdEUxs9-Nc4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "2025",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1R9f_wrGkPGQt5LMjNaRj-wVKBrBxFpMyVdEUxs9-Nc4/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "TOTAL": "=",
+            "MENSUAL": "=",
+            "TOTAL_MENSUAL": "=",
+            "COMIDA": "={{ $json.gasto }}",
+            "TOTAL_COMIDA": "={{ $json.total }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "GASTOS",
+              "displayName": "GASTOS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "MENSUAL",
+              "displayName": "MENSUAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_MENUSAL",
+              "displayName": "FECHA_MENUSAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_MENSUAL",
+              "displayName": "TOTAL_MENSUAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "OCIO",
+              "displayName": "OCIO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_OCIO",
+              "displayName": "FECHA_OCIO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_OCIO",
+              "displayName": "TOTAL_OCIO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TRABAJO",
+              "displayName": "TRABAJO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_DE_TRABAJO",
+              "displayName": "FECHA_DE_TRABAJO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_TRABAJO",
+              "displayName": "TOTAL_TRABAJO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "DEPORTE",
+              "displayName": "DEPORTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_DEPORTE",
+              "displayName": "FECHA_DEPORTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_DEPORTE",
+              "displayName": "TOTAL_DEPORTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "COMIDA",
+              "displayName": "COMIDA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_COMIDA",
+              "displayName": "FECHA_COMIDA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_COMIDA",
+              "displayName": "TOTAL_COMIDA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "INGRESOS",
+              "displayName": "INGRESOS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_INGRESO",
+              "displayName": "FECHA_INGRESO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_INGRESOS",
+              "displayName": "TOTAL_INGRESOS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "AHORRO",
+              "displayName": "AHORRO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA",
+              "displayName": "FECHA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_AHORRO",
+              "displayName": "TOTAL_AHORRO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "NO CLASIFICADO",
+              "displayName": "NO CLASIFICADO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_NO_CLASIFICADO",
+              "displayName": "FECHA_NO_CLASIFICADO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL",
+              "displayName": "TOTAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "INVERSIONES",
+              "displayName": "INVERSIONES",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1712,
+        -896
+      ],
+      "id": "445b26b5-dea9-4588-820f-a8064754690a",
+      "name": "COMIDA",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "oSybT3jDr00KYv5c",
+          "name": "Gmail Account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1R9f_wrGkPGQt5LMjNaRj-wVKBrBxFpMyVdEUxs9-Nc4",
+          "mode": "list",
+          "cachedResultName": "Finanzas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1R9f_wrGkPGQt5LMjNaRj-wVKBrBxFpMyVdEUxs9-Nc4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "2025",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1R9f_wrGkPGQt5LMjNaRj-wVKBrBxFpMyVdEUxs9-Nc4/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "TOTAL": "=",
+            "MENSUAL": "=",
+            "TOTAL_MENSUAL": "=",
+            "DEPORTE": "={{ $json.gasto }}",
+            "TOTAL_DEPORTE": "={{ $json.total }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "GASTOS",
+              "displayName": "GASTOS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "MENSUAL",
+              "displayName": "MENSUAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_MENUSAL",
+              "displayName": "FECHA_MENUSAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_MENSUAL",
+              "displayName": "TOTAL_MENSUAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "OCIO",
+              "displayName": "OCIO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_OCIO",
+              "displayName": "FECHA_OCIO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_OCIO",
+              "displayName": "TOTAL_OCIO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TRABAJO",
+              "displayName": "TRABAJO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_DE_TRABAJO",
+              "displayName": "FECHA_DE_TRABAJO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_TRABAJO",
+              "displayName": "TOTAL_TRABAJO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "DEPORTE",
+              "displayName": "DEPORTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_DEPORTE",
+              "displayName": "FECHA_DEPORTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_DEPORTE",
+              "displayName": "TOTAL_DEPORTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "COMIDA",
+              "displayName": "COMIDA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_COMIDA",
+              "displayName": "FECHA_COMIDA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_COMIDA",
+              "displayName": "TOTAL_COMIDA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "INGRESOS",
+              "displayName": "INGRESOS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_INGRESO",
+              "displayName": "FECHA_INGRESO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_INGRESOS",
+              "displayName": "TOTAL_INGRESOS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "AHORRO",
+              "displayName": "AHORRO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA",
+              "displayName": "FECHA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_AHORRO",
+              "displayName": "TOTAL_AHORRO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "NO CLASIFICADO",
+              "displayName": "NO CLASIFICADO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_NO_CLASIFICADO",
+              "displayName": "FECHA_NO_CLASIFICADO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL",
+              "displayName": "TOTAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "INVERSIONES",
+              "displayName": "INVERSIONES",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1712,
+        -688
+      ],
+      "id": "32a7c916-9061-4491-b43b-290700655ad2",
+      "name": "DEPORTE",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "oSybT3jDr00KYv5c",
+          "name": "Gmail Account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1R9f_wrGkPGQt5LMjNaRj-wVKBrBxFpMyVdEUxs9-Nc4",
+          "mode": "list",
+          "cachedResultName": "Finanzas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1R9f_wrGkPGQt5LMjNaRj-wVKBrBxFpMyVdEUxs9-Nc4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "2025",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1R9f_wrGkPGQt5LMjNaRj-wVKBrBxFpMyVdEUxs9-Nc4/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "TOTAL": "=",
+            "MENSUAL": "=",
+            "TOTAL_MENSUAL": "=",
+            "TRABAJO": "={{ $json.gasto }}",
+            "TOTAL_TRABAJO": "={{ $json.total }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "GASTOS",
+              "displayName": "GASTOS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "MENSUAL",
+              "displayName": "MENSUAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_MENUSAL",
+              "displayName": "FECHA_MENUSAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_MENSUAL",
+              "displayName": "TOTAL_MENSUAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "OCIO",
+              "displayName": "OCIO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_OCIO",
+              "displayName": "FECHA_OCIO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_OCIO",
+              "displayName": "TOTAL_OCIO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TRABAJO",
+              "displayName": "TRABAJO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_DE_TRABAJO",
+              "displayName": "FECHA_DE_TRABAJO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_TRABAJO",
+              "displayName": "TOTAL_TRABAJO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "DEPORTE",
+              "displayName": "DEPORTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_DEPORTE",
+              "displayName": "FECHA_DEPORTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_DEPORTE",
+              "displayName": "TOTAL_DEPORTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "COMIDA",
+              "displayName": "COMIDA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_COMIDA",
+              "displayName": "FECHA_COMIDA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_COMIDA",
+              "displayName": "TOTAL_COMIDA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "INGRESOS",
+              "displayName": "INGRESOS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_INGRESO",
+              "displayName": "FECHA_INGRESO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_INGRESOS",
+              "displayName": "TOTAL_INGRESOS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "AHORRO",
+              "displayName": "AHORRO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA",
+              "displayName": "FECHA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_AHORRO",
+              "displayName": "TOTAL_AHORRO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "NO CLASIFICADO",
+              "displayName": "NO CLASIFICADO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_NO_CLASIFICADO",
+              "displayName": "FECHA_NO_CLASIFICADO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL",
+              "displayName": "TOTAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "INVERSIONES",
+              "displayName": "INVERSIONES",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1712,
+        -512
+      ],
+      "id": "fceed3df-bce0-415f-b342-f4e906a87819",
+      "name": "TRABAJO",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "oSybT3jDr00KYv5c",
+          "name": "Gmail Account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1R9f_wrGkPGQt5LMjNaRj-wVKBrBxFpMyVdEUxs9-Nc4",
+          "mode": "list",
+          "cachedResultName": "Finanzas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1R9f_wrGkPGQt5LMjNaRj-wVKBrBxFpMyVdEUxs9-Nc4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "2025",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1R9f_wrGkPGQt5LMjNaRj-wVKBrBxFpMyVdEUxs9-Nc4/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "TOTAL": "=",
+            "MENSUAL": "=",
+            "TOTAL_MENSUAL": "=",
+            "TOTAL_OCIO": "={{ $json.total }}",
+            "OCIO": "={{ $json.gasto }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "GASTOS",
+              "displayName": "GASTOS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "MENSUAL",
+              "displayName": "MENSUAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_MENUSAL",
+              "displayName": "FECHA_MENUSAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_MENSUAL",
+              "displayName": "TOTAL_MENSUAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "OCIO",
+              "displayName": "OCIO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_OCIO",
+              "displayName": "FECHA_OCIO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_OCIO",
+              "displayName": "TOTAL_OCIO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TRABAJO",
+              "displayName": "TRABAJO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_DE_TRABAJO",
+              "displayName": "FECHA_DE_TRABAJO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_TRABAJO",
+              "displayName": "TOTAL_TRABAJO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "DEPORTE",
+              "displayName": "DEPORTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_DEPORTE",
+              "displayName": "FECHA_DEPORTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_DEPORTE",
+              "displayName": "TOTAL_DEPORTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "COMIDA",
+              "displayName": "COMIDA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_COMIDA",
+              "displayName": "FECHA_COMIDA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_COMIDA",
+              "displayName": "TOTAL_COMIDA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "INGRESOS",
+              "displayName": "INGRESOS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_INGRESO",
+              "displayName": "FECHA_INGRESO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_INGRESOS",
+              "displayName": "TOTAL_INGRESOS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "AHORRO",
+              "displayName": "AHORRO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA",
+              "displayName": "FECHA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_AHORRO",
+              "displayName": "TOTAL_AHORRO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "NO CLASIFICADO",
+              "displayName": "NO CLASIFICADO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_NO_CLASIFICADO",
+              "displayName": "FECHA_NO_CLASIFICADO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL",
+              "displayName": "TOTAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "INVERSIONES",
+              "displayName": "INVERSIONES",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1712,
+        -1072
+      ],
+      "id": "b37da10a-08a4-4206-8ed7-36c4a1a290fd",
+      "name": "OCIO",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "oSybT3jDr00KYv5c",
+          "name": "Gmail Account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1R9f_wrGkPGQt5LMjNaRj-wVKBrBxFpMyVdEUxs9-Nc4",
+          "mode": "list",
+          "cachedResultName": "Finanzas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1R9f_wrGkPGQt5LMjNaRj-wVKBrBxFpMyVdEUxs9-Nc4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "2025",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1R9f_wrGkPGQt5LMjNaRj-wVKBrBxFpMyVdEUxs9-Nc4/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "TOTAL": "=",
+            "MENSUAL": "=",
+            "TOTAL_MENSUAL": "=",
+            "AHORRO": "={{ $json.gasto }}",
+            "TOTAL_AHORRO": "={{ $json.total }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "GASTOS",
+              "displayName": "GASTOS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "MENSUAL",
+              "displayName": "MENSUAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_MENUSAL",
+              "displayName": "FECHA_MENUSAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_MENSUAL",
+              "displayName": "TOTAL_MENSUAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "OCIO",
+              "displayName": "OCIO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_OCIO",
+              "displayName": "FECHA_OCIO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_OCIO",
+              "displayName": "TOTAL_OCIO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TRABAJO",
+              "displayName": "TRABAJO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_DE_TRABAJO",
+              "displayName": "FECHA_DE_TRABAJO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_TRABAJO",
+              "displayName": "TOTAL_TRABAJO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "DEPORTE",
+              "displayName": "DEPORTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_DEPORTE",
+              "displayName": "FECHA_DEPORTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_DEPORTE",
+              "displayName": "TOTAL_DEPORTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "COMIDA",
+              "displayName": "COMIDA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_COMIDA",
+              "displayName": "FECHA_COMIDA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_COMIDA",
+              "displayName": "TOTAL_COMIDA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "INDISPENSABLE",
+              "displayName": "INDISPENSABLE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_INDISPENSABLE",
+              "displayName": "FECHA_INDISPENSABLE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_INDISPENSABLE",
+              "displayName": "TOTAL_INDISPENSABLE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "VIAJES",
+              "displayName": "VIAJES",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_VIAJES",
+              "displayName": "FECHA_VIAJES",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_VIAJES",
+              "displayName": "TOTAL_VIAJES",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "INGRESOS",
+              "displayName": "INGRESOS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_INGRESO",
+              "displayName": "FECHA_INGRESO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_INGRESOS",
+              "displayName": "TOTAL_INGRESOS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "AHORRO",
+              "displayName": "AHORRO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA",
+              "displayName": "FECHA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_AHORRO",
+              "displayName": "TOTAL_AHORRO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "NO CLASIFICADO",
+              "displayName": "NO CLASIFICADO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_NO_CLASIFICADO",
+              "displayName": "FECHA_NO_CLASIFICADO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL",
+              "displayName": "TOTAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "INVERSIONES",
+              "displayName": "INVERSIONES",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1712,
+        -320
+      ],
+      "id": "d3847936-08b4-4de8-97a6-15e01bbe280f",
+      "name": "AHORRO",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "oSybT3jDr00KYv5c",
+          "name": "Gmail Account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1R9f_wrGkPGQt5LMjNaRj-wVKBrBxFpMyVdEUxs9-Nc4",
+          "mode": "list",
+          "cachedResultName": "Finanzas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1R9f_wrGkPGQt5LMjNaRj-wVKBrBxFpMyVdEUxs9-Nc4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "2025",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1R9f_wrGkPGQt5LMjNaRj-wVKBrBxFpMyVdEUxs9-Nc4/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "TOTAL": "=",
+            "MENSUAL": "=",
+            "TOTAL_MENSUAL": "=",
+            "INVERSIONES": "={{ $json.total }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "GASTOS",
+              "displayName": "GASTOS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "MENSUAL",
+              "displayName": "MENSUAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_MENUSAL",
+              "displayName": "FECHA_MENUSAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_MENSUAL",
+              "displayName": "TOTAL_MENSUAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "OCIO",
+              "displayName": "OCIO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_OCIO",
+              "displayName": "FECHA_OCIO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_OCIO",
+              "displayName": "TOTAL_OCIO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TRABAJO",
+              "displayName": "TRABAJO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_DE_TRABAJO",
+              "displayName": "FECHA_DE_TRABAJO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_TRABAJO",
+              "displayName": "TOTAL_TRABAJO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "DEPORTE",
+              "displayName": "DEPORTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_DEPORTE",
+              "displayName": "FECHA_DEPORTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_DEPORTE",
+              "displayName": "TOTAL_DEPORTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "COMIDA",
+              "displayName": "COMIDA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_COMIDA",
+              "displayName": "FECHA_COMIDA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_COMIDA",
+              "displayName": "TOTAL_COMIDA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "INDISPENSABLE",
+              "displayName": "INDISPENSABLE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_INDISPENSABLE",
+              "displayName": "FECHA_INDISPENSABLE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_INDISPENSABLE",
+              "displayName": "TOTAL_INDISPENSABLE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "VIAJES",
+              "displayName": "VIAJES",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_VIAJES",
+              "displayName": "FECHA_VIAJES",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_VIAJES",
+              "displayName": "TOTAL_VIAJES",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "INGRESOS",
+              "displayName": "INGRESOS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_INGRESO",
+              "displayName": "FECHA_INGRESO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_INGRESOS",
+              "displayName": "TOTAL_INGRESOS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "AHORRO",
+              "displayName": "AHORRO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA",
+              "displayName": "FECHA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL_AHORRO",
+              "displayName": "TOTAL_AHORRO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "NO CLASIFICADO",
+              "displayName": "NO CLASIFICADO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FECHA_NO_CLASIFICADO",
+              "displayName": "FECHA_NO_CLASIFICADO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL",
+              "displayName": "TOTAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "INVERSIONES",
+              "displayName": "INVERSIONES",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1712,
+        -128
+      ],
+      "id": "79c844a9-f1de-4008-b358-b3a75b7e9c1a",
+      "name": "INVERSION",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "oSybT3jDr00KYv5c",
+          "name": "Gmail Account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.rama }}",
+                    "rightValue": "METE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "e04f07cd-91ff-4841-b477-0fc8d62cdcc9"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "ecff8fca-faea-4ac1-8b5b-b30fa8226924",
+                    "leftValue": "={{ $json.rama }}",
+                    "rightValue": "NO_METE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        720,
+        16
+      ],
+      "id": "62cbaa5d-fb2b-48cc-877d-4d097b31e47b",
+      "name": "Switch2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// --- HARD ---\n// Caso: más de una persona\n// persona = \"A, B, C\"\n// total = importe tal cual (NO dividir)\n\nconst ia = $json.ia ?? {};\nconst text = ($json.message?.text ?? ia.text ?? \"\").toString();\n\nfunction parseFirstAmount(t) {\n  const m = t.match(/(-?\\d+(?:[.,]\\d{1,2})?)\\s*(?:€|eur|euros)?/i);\n  if (!m) return 0;\n  const n = Number(m[1].replace(\",\", \".\"));\n  return Number.isFinite(n) ? n : 0;\n}\n\n// Personas (ya sabemos que hay >1)\nconst personasArr = Array.isArray(ia.personas) ? ia.personas : [];\nconst persona = personasArr.length ? personasArr.join(\", \") : \"NO SE\";\n\n// Fecha\nconst fecha =\n  $json.fecha ??\n  (typeof $json.message?.date === \"number\"\n    ? new Date($json.message.date * 1000).toISOString()\n    : new Date().toISOString());\n\n// Info\nconst info = ia.info ?? \"NO SE\";\n\n// Total (sin dividir)\nconst totalRaw =\n  (typeof ia.cantidad_total === \"number\")\n    ? ia.cantidad_total\n    : parseFirstAmount(text);\n\nconst total = Number(totalRaw.toFixed(2));\n\nreturn [{\n  json: {\n    ...$json,\n    persona,\n    fecha,\n    info,\n    total,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1744,
+        48
+      ],
+      "id": "b3d000e9-58e7-4988-95e5-01c7f2387e99",
+      "name": "Hard route"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Simple route2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Hard route",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Simple route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detect type": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple route": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording": {
+      "main": [
+        [
+          {
+            "node": "Simple route2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Detect type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple route2": {
+      "main": [
+        [
+          {
+            "node": "Switch2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "MENSUAL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "OCIO",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "COMIDA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DEPORTE",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TRABAJO",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AHORRO",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "INVERSION",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch2": {
+      "main": [
+        [
+          {
+            "node": "Message a model1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hard route": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9343bb65-67ed-4844-8190-505a7762073f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5f1c0fe4aee9ab0a43ef028fbfe6cb8c522003565e3d20730048ed5b14d6d44c"
+  },
+  "id": "LAETlg6Q6GVGz7Be",
+  "tags": []
+}
